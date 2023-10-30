@@ -1,20 +1,60 @@
 package PCDServer;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
 
 public class ServerThread extends Thread {
-	private DataInputStream input;
-	private DataOutputStream output;
-    private String nombreCliente;
+    
+    private final Socket clientSocket;
 
-    public ServerThread(DataInputStream input, DataOutputStream output, String nombreCliente) {
-		this.input = input;
-        this.output = output;
-        this.nombreCliente = nombreCliente;
-	}
+    // Constantes de control
+    private static final int STX = 2;
+    private static final int ETX = 3;
+
+    public ServerThread(Socket socket) {
+        this.clientSocket = socket;
+    }
 
     @Override
     public void run() {
+        try (DataInputStream in = new DataInputStream(clientSocket.getInputStream());
+             DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream())) {
 
+            while (true) {
+                String message = "";
+                if (in.read() != STX) break;  // Leemos el byte STX
+
+                int ch;
+                while ((ch = in.read()) != ETX) {  // Leemos hasta ETX
+                    message += (char) ch;
+                }
+
+
+                if (in.read() != STX) break;  // Leemos el siguiente STX
+
+                StringBuilder hashBuilder = new StringBuilder();
+                while ((ch = in.read()) != ETX) {  // Leemos el hash hasta ETX
+                    hashBuilder.append((char) ch);
+                }
+
+                String receivedHash = hashBuilder.toString();
+
+                System.out.println("Mensaje recibido: " + message);
+
+                String computedHash = String.valueOf(message.hashCode());
+                
+                Thread.sleep(2000);  // Espera 2 segundos
+
+                if (computedHash.equals(receivedHash)) {
+                    out.write(0x05);  // ACK
+                } else {
+                    out.write(0x15);  // NAK
+                }
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }
