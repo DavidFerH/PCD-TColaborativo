@@ -24,6 +24,7 @@ public class ServerThread extends Thread {
 
             while (true) {
                 String message = "";
+                String receivedHash = "";
                 if (in.read() != STX) break;  // Leemos el byte STX
 
                 int ch;
@@ -31,15 +32,11 @@ public class ServerThread extends Thread {
                     message += (char) ch;
                 }
 
-
                 if (in.read() != STX) break;  // Leemos el siguiente STX
 
-                StringBuilder hashBuilder = new StringBuilder();
                 while ((ch = in.read()) != ETX) {  // Leemos el hash hasta ETX
-                    hashBuilder.append((char) ch);
+                    receivedHash += (char) ch;
                 }
-
-                String receivedHash = hashBuilder.toString();
 
                 System.out.println("Mensaje recibido: " + message);
 
